@@ -17,6 +17,8 @@
 #ifndef ADAFRUIT_MAX31865_H
 #define ADAFRUIT_MAX31865_H
 
+//#define MAX31865_DEBUG_LIBRARY
+
 #define MAX31865_CONFIG_REG 0x00
 #define MAX31865_CONFIG_BIAS 0x80
 #define MAX31865_CONFIG_MODEAUTO 0x40
@@ -73,12 +75,19 @@ public:
   void clearFault(void);
   uint16_t readRTD();
 
+  bool readRTDAsync(uint16_t& rtd); //added by JD
+  float temperatureAsync(float Rt, float RTDnominal, float refResistor); //added by JD
+
   void setWires(max31865_numwires_t wires);
   void autoConvert(bool b);
   void enable50Hz(bool b);
   void enableBias(bool b);
 
   float temperature(float RTDnominal, float refResistor);
+
+  #ifdef MAX31865_DEBUG_LIBRARY
+    uint8_t debugConfigRegister(void);
+  #endif
 
 private:
   Adafruit_SPIDevice spi_dev;

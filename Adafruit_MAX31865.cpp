@@ -247,7 +247,7 @@ uint16_t Adafruit_MAX31865::readRTD(void) {
 
   uint16_t rtd = readRegister16(MAX31865_RTDMSB_REG);
 
-  if (!bias) {
+  if (!bias) {  
     uint8_t t = readRegister8(MAX31865_CONFIG_REG);
     t &= ~MAX31865_CONFIG_BIAS; // disable bias
     writeRegister8(MAX31865_CONFIG_REG, t);
@@ -258,6 +258,107 @@ uint16_t Adafruit_MAX31865::readRTD(void) {
 
   return rtd;
 }
+
+//*********************************************
+ float Adafruit_MAX31865::temperatureAsync(float Rt, float RTDnominal, float refResistor) {
+  float Z1, Z2, Z3, Z4, temp;
+
+  Rt /= 32768;
+  Rt *= refResistor;
+
+  Z1 = -RTD_A;
+  Z2 = RTD_A * RTD_A - (4 * RTD_B);
+  Z3 = (4 * RTD_B) / RTDnominal;
+  Z4 = 2 * RTD_B;
+
+  temp = Z2 + (Z3 * Rt);
+  temp = (sqrt(temp) + Z1) / Z4;
+
+  if (temp >= 0)
+    return temp;
+
+  // ugh.
+  Rt /= RTDnominal;
+  Rt *= 100; // normalize to 100 ohm
+
+  float rpoly = Rt;
+
+  temp = -242.02;
+  temp += 2.2228 * rpoly;
+  rpoly *= Rt; // square
+  temp += 2.5859e-3 * rpoly;
+  rpoly *= Rt; // ^3
+  temp -= 4.8260e-6 * rpoly;
+  rpoly *= Rt; // ^4
+  temp -= 2.8183e-8 * rpoly;
+  rpoly *= Rt; // ^5
+  temp += 1.5243e-10 * rpoly;
+
+  return temp;
+}
+//*/
+ 
+//**********************************************
+ bool Adafruit_MAX31865::readRTDAsync(uint16_t & rtd) {
+  enum t_state : byte {STATE1, STATE2, STATE3};
+  static t_state state = STATE1;
+  static uint32_t chrono = 0;
+  bool valueAvailable = false;
+ 
+  switch (state) {
+
+    case STATE1:
+      clearFault();
+      //enableBias(true);
+      if (!bias) {
+        uint8_t t = readRegister8(MAX31865_CONFIG_REG);
+        t |= MAX31865_CONFIG_BIAS; // enable bias
+        writeRegister8(MAX31865_CONFIG_REG, t);
+      }
+      chrono = millis();
+      state = STATE2;
+      break;
+
+    case STATE2:
+      if (millis() - chrono >= 10) {
+        uint8_t t = readRegister8(MAX31865_CONFIG_REG);
+        t |= MAX31865_CONFIG_1SHOT;
+        writeRegister8(MAX31865_CONFIG_REG, t);
+        chrono = millis();
+        state = STATE3;
+      }
+      break;
+
+    case STATE3:
+      if(filter50Hz){
+        if (millis() - chrono >= 75) {
+          rtd = readRegister16(MAX31865_RTDMSB_REG);
+          rtd >>= 1;        // remove fault
+          state = STATE1;   // get ready for next time
+          valueAvailable = true; // signal computation is done
+        }
+      }
+      else{
+        if (millis() - chrono >= 65) {
+          rtd = readRegister16(MAX31865_RTDMSB_REG);
+          rtd >>= 1;        // remove fault
+          state = STATE1;   // get ready for next time
+          valueAvailable = true; // signal computation is done
+        }
+      }
+      break;
+  }
+  return valueAvailable;
+}
+//*/
+
+
+
+
+
+
+
+
 
 /**********************************************/
 
@@ -292,3 +393,13 @@ void Adafruit_MAX31865::writeRegister8(uint8_t addr, uint8_t data) {
   uint8_t buffer[2] = {addr, data};
   spi_dev.write(buffer, 2);
 }
+
+//**** DEBUGGING****
+#ifdef MAX31865_DEBUG_LIBRARY
+  uint8_t  Adafruit_MAX31865:: debugConfigRegister(void){
+    uint8_t  t = readRegister8(MAX31865_CONFIG_REG);
+    //t |= MAX31865_CONFIG_MODEOFF;
+    //t = 0x00;
+    return t;
+  }
+#endif
