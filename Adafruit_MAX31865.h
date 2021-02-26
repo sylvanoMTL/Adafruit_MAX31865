@@ -1,3 +1,15 @@
+/**********Adafruit_MAX31865 modified by Sylvain Boyer 17/02/2021
+ * 
+ * 17/02/2021 - added some code from Jack Davies and J-M-L (arduino forum)
+ *  https://forum.arduino.cc/index.php?topic=703346.msg4772457#msg4772457
+ *    added: readRTDAsync() and temperatureAsync
+ *    this allow to keep the code running rather than being stuck by the delays
+ *  17/02/2021 - Fork from https://github.com/budulinek/Adafruit_MAX31865.git
+ *    the fork contains code improvement to allow continuous measurement rather than single shot measurement
+ *    this will improve reading rate but will cause self heating.
+ *    the code also allow the use of the 50Hz filter with the appropriate delay.
+
+
 /***************************************************
   This is a library for the Adafruit PT100/P1000 RTD Sensor w/MAX31865
 
