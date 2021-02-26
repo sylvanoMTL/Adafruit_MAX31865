@@ -8,7 +8,7 @@
  *    the fork contains code improvement to allow continuous measurement rather than single shot measurement
  *    this will improve reading rate but will cause self heating.
  *    the code also allow the use of the 50Hz filter with the appropriate delay.
-
+*/
 
 /***************************************************
   This is a library for the Adafruit PT100/P1000 RTD Sensor w/MAX31865
