@@ -87,8 +87,9 @@ public:
   void clearFault(void);
   uint16_t readRTD();
 
-  bool readRTDAsync(uint16_t& rtd); //added by JD
+  bool readRTDAsync(uint16_t& rtd); //added by JD modified by Sylvain Boyer
   float temperatureAsync(float Rt, float RTDnominal, float refResistor); //added by JD
+ 
 
   void setWires(max31865_numwires_t wires);
   void autoConvert(bool b);
@@ -119,6 +120,10 @@ private:
   
   // 50Hz filter
   bool filter50Hz;     
+
+  //timer for Asynchro Reading
+  uint32_t chrono;   //added Sylvain Boyer
+
 };
 
 #endif

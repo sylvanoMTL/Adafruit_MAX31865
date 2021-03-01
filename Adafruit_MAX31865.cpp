@@ -299,7 +299,7 @@ uint16_t Adafruit_MAX31865::readRTD(void) {
 //*/
  
 //**********************************************
- bool Adafruit_MAX31865::readRTDAsync(uint16_t & rtd) {
+/* bool Adafruit_MAX31865::readRTDAsync(uint16_t & rtd) {
   enum t_state : byte {STATE1, STATE2, STATE3};
   static t_state state = STATE1;
   static uint32_t chrono = 0;
@@ -350,9 +350,62 @@ uint16_t Adafruit_MAX31865::readRTD(void) {
   }
   return valueAvailable;
 }
-//*/
+*/
 
+bool Adafruit_MAX31865::readRTDAsync(uint16_t & rtd) {
+  enum t_state : byte {STATE1, STATE2, STATE3};
+  static t_state state = STATE1;
+  bool valueAvailable = false;
+  
+  uint32_t timeoutVbias = 10;
+  uint32_t timeoutf50Hz = 75;
+  uint32_t timeoutf60Hz = 65;
 
+  switch (state) {
+
+    case STATE1:
+      clearFault();
+      //enableBias(true);
+      if (!bias) {
+        uint8_t t = readRegister8(MAX31865_CONFIG_REG);
+        t |= MAX31865_CONFIG_BIAS; // enable bias
+        writeRegister8(MAX31865_CONFIG_REG, t);
+      }
+      chrono = millis();
+      state = STATE2;
+      break;
+
+    case STATE2:
+      if (millis() - chrono >= timeoutVbias) {
+        uint8_t t = readRegister8(MAX31865_CONFIG_REG);
+        t |= MAX31865_CONFIG_1SHOT;
+        writeRegister8(MAX31865_CONFIG_REG, t);
+        chrono = millis();
+        state = STATE3;
+      }
+      break;
+
+    case STATE3:
+      if(filter50Hz){
+        if (millis() - chrono >= timeoutf50Hz) {
+          rtd = readRegister16(MAX31865_RTDMSB_REG);
+          rtd >>= 1;        // remove fault
+          state = STATE1;   // get ready for next time
+          valueAvailable = true; // signal computation is done
+        }
+      }
+      else{
+        if (millis() - chrono >= timeoutf60Hz) {
+          rtd = readRegister16(MAX31865_RTDMSB_REG);
+          rtd >>= 1;        // remove fault
+          state = STATE1;   // get ready for next time
+          valueAvailable = true; // signal computation is done
+        }
+      }
+      break;
+  }
+  return valueAvailable;
+}
 
 
 
